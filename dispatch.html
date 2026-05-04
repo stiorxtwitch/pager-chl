@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SAMU — Centre de Dispatch</title>
+  <title>112 — Centre de Dispatch</title>
   <link rel="stylesheet" href="style.css">
   <style>
     body { background: var(--bg); }
@@ -286,7 +286,7 @@
 
 <!-- HEADER -->
 <header class="page-header">
-  <div class="header-logo">SAMU <span>·</span> Dispatch</div>
+  <div class="header-logo">112 <span>·</span> Dispatch</div>
   <div class="header-badge badge-dispatch">DISPATCH</div>
   <div class="header-sep"></div>
   <div class="header-topic" id="headerTopic">canal: —</div>
@@ -335,7 +335,7 @@
       <div class="resource-grid">
         <label class="resource-check"><input type="checkbox" id="res-ambu" onchange="updatePreview()"><label for="res-ambu">Ambulance</label></label>
         <label class="resource-check"><input type="checkbox" id="res-smur" onchange="updatePreview()"><label for="res-smur">SMUR</label></label>
-        <label class="resource-check"><input type="checkbox" id="res-vsav" onchange="updatePreview()"><label for="res-vsav">VSAV</label></label>
+        <label class="resource-check"><input type="checkbox" id="res-vsav" onchange="updatePreview()"><label for="res-vsav">BALISAGE</label></label>
         <label class="resource-check"><input type="checkbox" id="res-heli" onchange="updatePreview()"><label for="res-heli">Hélico</label></label>
         <label class="resource-check"><input type="checkbox" id="res-mug"  onchange="updatePreview()"><label for="res-mug">MUG</label></label>
         <label class="resource-check"><input type="checkbox" id="res-pom"  onchange="updatePreview()"><label for="res-pom">Pompiers</label></label>
@@ -487,7 +487,7 @@ function updatePreview() {
   const resources = [];
   if (document.getElementById('res-ambu').checked) resources.push('AMBULANCE');
   if (document.getElementById('res-smur').checked) resources.push('SMUR');
-  if (document.getElementById('res-vsav').checked) resources.push('VSAV');
+  if (document.getElementById('res-vsav').checked) resources.push('BALISAGE');
   if (document.getElementById('res-heli').checked) resources.push('HELI');
   if (document.getElementById('res-mug').checked)  resources.push('MUG');
   if (document.getElementById('res-pom').checked)  resources.push('POMPIERS');
@@ -516,7 +516,7 @@ async function sendAlert() {
   const resources = [];
   if (document.getElementById('res-ambu').checked) resources.push('AMBULANCE');
   if (document.getElementById('res-smur').checked) resources.push('SMUR');
-  if (document.getElementById('res-vsav').checked) resources.push('VSAV');
+  if (document.getElementById('res-vsav').checked) resources.push('BALISAGE');
   if (document.getElementById('res-heli').checked) resources.push('HELI');
   if (document.getElementById('res-mug').checked)  resources.push('MUG');
   if (document.getElementById('res-pom').checked)  resources.push('POMPIERS');
