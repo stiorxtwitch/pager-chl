@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=340">
-  <title>📟 Pager SAMU</title>
+  <title>📟 Pager 112</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📟</text></svg>">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap">
   <style>
@@ -378,7 +378,7 @@
   <input class="cfg-input" type="text" id="cfgInput" placeholder="ambu-pager-001" spellcheck="false">
   <div class="cfg-note">
     Même canal que la page Dispatch.<br>
-    Ex: ambu-samu-nancy-x7k2
+    Ex: ambu-smur-seraing-x7k2
   </div>
   <div class="cfg-btns">
     <button class="cfg-btn cfg-cancel" onclick="closeConfig()">Annuler</button>
@@ -391,7 +391,7 @@
 
   <!-- Top clip -->
   <div class="clip">
-    <span class="clip-label">SAMU · PAGER</span>
+    <span class="clip-label">112 · PAGER</span>
     <div class="clip-controls">
       <button class="clip-btn btn-config" id="cfgBtn" onclick="openConfig()" title="Configurer le canal">⚙</button>
       <button class="clip-btn btn-lock"   id="lockBtn" onclick="toggleLock()" title="Verrouiller la position">🔓</button>
@@ -437,7 +437,7 @@
 
 <script>
 /* ════════════════════════════════════════
-   PAGER POPUP — Système Pager SAMU
+   PAGER POPUP — Système Pager 112
    Connexion ntfy.sh indépendante,
    persiste même si la page principale
    est fermée.
@@ -653,9 +653,9 @@ function flashAlert() {
 function flashTitle() {
   let n = 0;
   const iv = setInterval(() => {
-    document.title = n % 2 === 0 ? '🚨 ALERTE PAGER !' : '📟 Pager SAMU';
+    document.title = n % 2 === 0 ? '🚨 ALERTE PAGER !' : '📟 Pager 112';
     n++;
-    if (n > 12) { clearInterval(iv); document.title = '📟 Pager SAMU'; }
+    if (n > 12) { clearInterval(iv); document.title = '📟 Pager 112'; }
   }, 500);
 }
 
@@ -665,7 +665,7 @@ function acknowledge() {
   document.getElementById('screen').classList.remove('active');
   document.getElementById('sLine1').textContent = 'ACQUITTÉ';
   document.getElementById('sLine2').textContent = '';
-  document.title = '📟 Pager SAMU';
+  document.title = '📟 Pager 112';
   setTimeout(() => {
     if (msgQueue[0]) {
       document.getElementById('sLine1').textContent = msgQueue[0].line1;
