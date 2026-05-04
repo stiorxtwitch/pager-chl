@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAMU — Centre de Dispatch</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background: var(--bg); }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 0;
+      height: calc(100vh - 60px);
+    }
+
+    /* ── LEFT: FORM PANEL ── */
+    .form-panel {
+      padding: 32px 36px;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Type pills */
+    .type-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .type-pill {
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .type-pill:hover { border-color: #3d4d6a; color: var(--text); }
+    .type-pill.active { border-color: var(--red); background: rgba(232,48,48,0.12); color: var(--red); }
+
+    /* Grade selector */
+    .grade-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .grade-btn {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-dim);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      text-transform: uppercase;
+    }
+
+    .grade-btn:hover { color: var(--text); border-color: #3d4d6a; }
+    .grade-btn.active-t1 { border-color: #44cc44; background: rgba(68,204,68,0.1); color: #44cc44; }
+    .grade-btn.active-t2 { border-color: var(--yellow); background: rgba(245,197,24,0.1); color: var(--yellow); }
+    .grade-btn.active-t3 { border-color: #ff8c00; background: rgba(255,140,0,0.1); color: #ff8c00; }
+    .grade-btn.active-smur { border-color: var(--red); background: rgba(232,48,48,0.12); color: var(--red); }
+
+    /* Resources */
+    .resource-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .resource-check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .resource-check:hover { border-color: #3d4d6a; }
+
+    .resource-check input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--red);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .resource-check label {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      cursor: pointer;
+      text-transform: uppercase;
+      user-select: none;
+    }
+
+    .resource-check:has(input:checked) {
+      border-color: var(--red);
+      background: rgba(232,48,48,0.08);
+    }
+
+    .resource-check:has(input:checked) label { color: var(--text); }
+
+    /* Preview */
+    .preview-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preview-card::before {
+      content: 'APERÇU PAGER';
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      font-family: var(--font-lcd);
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+    }
+
+    .preview-lcd {
+      background: #3a6040;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: var(--font-lcd);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preview-lcd::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
+      pointer-events: none;
+    }
+
+    .preview-status {
+      font-size: 10px;
+      color: #2a5530;
+      margin-bottom: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .preview-seg {
+      font-size: 9px;
+      color: #2a5530;
+      margin-bottom: 6px;
+    }
+
+    .preview-line {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0a1a0a;
+      line-height: 1.5;
+      min-height: 20px;
+      word-break: break-word;
+    }
+
+    /* SEND BUTTON */
+    .send-section {
+      margin-top: 8px;
+    }
+
+    .btn-send {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      letter-spacing: 3px;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      justify-content: center;
+    }
+
+    .btn-send::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .btn-send .send-icon { font-size: 20px; }
+
+    @keyframes send-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(232,48,48,0.6); }
+      70% { box-shadow: 0 0 0 20px rgba(232,48,48,0); }
+      100% { box-shadow: 0 0 0 0 rgba(232,48,48,0); }
+    }
+
+    .btn-send.sending { animation: send-pulse 0.6s ease-out; }
+
+    /* ── RIGHT: HISTORY PANEL ── */
+    .history-panel {
+      display: flex;
+      flex-direction: column;
+      padding: 24px 20px;
+      overflow: hidden;
+    }
+
+    .history-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .history-empty {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 13px;
+      padding: 40px 0;
+      font-family: var(--font-lcd);
+    }
+
+    .history-empty-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+      opacity: 0.3;
+    }
+
+    .history-count {
+      font-family: var(--font-lcd);
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; grid-template-rows: auto auto; }
+      .history-panel { border-top: 1px solid var(--border); max-height: 300px; }
+      .form-panel { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="page-header">
+  <div class="header-logo">SAMU <span>·</span> Dispatch</div>
+  <div class="header-badge badge-dispatch">DISPATCH</div>
+  <div class="header-sep"></div>
+  <div class="header-topic" id="headerTopic">canal: —</div>
+  <button class="btn btn-ghost btn-sm" onclick="openSettings()" style="margin-left:8px;">⚙ Canal</button>
+</header>
+
+<!-- MAIN LAYOUT -->
+<div class="layout">
+
+  <!-- ── FORM PANEL ── -->
+  <div class="form-panel">
+    <div class="panel-title">Nouvelle alerte</div>
+
+    <!-- Type d'incident -->
+    <div class="field-group">
+      <label class="field-label">Type d'incident</label>
+      <div class="type-pills">
+        <div class="type-pill" data-type="ACCIDENT DE LA ROUTE" onclick="selectType(this)">🚗 Accident route</div>
+        <div class="type-pill" data-type="MALAISE CARDIAQUE"   onclick="selectType(this)">❤ Malaise cardiaque</div>
+        <div class="type-pill" data-type="INCENDIE"            onclick="selectType(this)">🔥 Incendie</div>
+        <div class="type-pill" data-type="CHUTE / TRAUMA"      onclick="selectType(this)">🦴 Chute / Trauma</div>
+        <div class="type-pill" data-type="NOYADE"              onclick="selectType(this)">💧 Noyade</div>
+        <div class="type-pill" data-type="INTOXICATION"        onclick="selectType(this)">☠ Intoxication</div>
+        <div class="type-pill" data-type="ACCOUCHEMENT"        onclick="selectType(this)">👶 Accouchement</div>
+        <div class="type-pill" data-type="AUTRE"               onclick="selectType(this)">⚡ Autre</div>
+      </div>
+      <input type="text" class="field-input" id="incidentType"
+        placeholder="Ou saisir manuellement..." style="margin-top:4px;">
+    </div>
+
+    <!-- Grade d'urgence -->
+    <div class="field-group">
+      <label class="field-label">Grade d'urgence</label>
+      <div class="grade-grid">
+        <button class="grade-btn" data-grade="T1" onclick="selectGrade(this)">T1<br><span style="font-size:9px;font-weight:400;opacity:0.6">Urgent</span></button>
+        <button class="grade-btn" data-grade="T2" onclick="selectGrade(this)">T2<br><span style="font-size:9px;font-weight:400;opacity:0.6">Prioritaire</span></button>
+        <button class="grade-btn" data-grade="T3" onclick="selectGrade(this)">T3<br><span style="font-size:9px;font-weight:400;opacity:0.6">Différé</span></button>
+        <button class="grade-btn" data-grade="SMUR" onclick="selectGrade(this)">SMUR<br><span style="font-size:9px;font-weight:400;opacity:0.6">Médical</span></button>
+      </div>
+    </div>
+
+    <!-- Ressources -->
+    <div class="field-group">
+      <label class="field-label">Ressources demandées</label>
+      <div class="resource-grid">
+        <label class="resource-check"><input type="checkbox" id="res-ambu" onchange="updatePreview()"><label for="res-ambu">Ambulance</label></label>
+        <label class="resource-check"><input type="checkbox" id="res-smur" onchange="updatePreview()"><label for="res-smur">SMUR</label></label>
+        <label class="resource-check"><input type="checkbox" id="res-vsav" onchange="updatePreview()"><label for="res-vsav">VSAV</label></label>
+        <label class="resource-check"><input type="checkbox" id="res-heli" onchange="updatePreview()"><label for="res-heli">Hélico</label></label>
+        <label class="resource-check"><input type="checkbox" id="res-mug"  onchange="updatePreview()"><label for="res-mug">MUG</label></label>
+        <label class="resource-check"><input type="checkbox" id="res-pom"  onchange="updatePreview()"><label for="res-pom">Pompiers</label></label>
+      </div>
+    </div>
+
+    <!-- Extension / numéro -->
+    <div class="field-group">
+      <label class="field-label">Rappeler le</label>
+      <input type="text" class="field-input" id="extNumber"
+        placeholder="ex: 7051" maxlength="20" oninput="updatePreview()">
+    </div>
+
+    <!-- Message libre -->
+    <div class="field-group">
+      <label class="field-label">Complément message (optionnel)</label>
+      <textarea class="field-textarea" id="freeText"
+        placeholder="Adresse, précisions..." oninput="updatePreview()"></textarea>
+    </div>
+
+    <!-- Preview LCD -->
+    <div class="preview-card">
+      <div class="preview-lcd">
+        <div class="preview-status">☀ ▴ ◄)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="prevClock">--:--</span> ▶</div>
+        <div class="preview-seg" id="prevSeg">-- --&nbsp;&nbsp;--:--</div>
+        <div class="preview-line" id="prevLine1">—</div>
+        <div class="preview-line" id="prevLine2">—</div>
+      </div>
+    </div>
+
+    <!-- SEND -->
+    <div class="send-section">
+      <button class="btn btn-danger btn-send" id="sendBtn" onclick="sendAlert()">
+        <span class="send-icon">🔔</span>
+        DÉCLENCHER LE PAGER
+      </button>
+    </div>
+  </div>
+
+  <!-- ── HISTORY PANEL ── -->
+  <div class="history-panel">
+    <div class="panel-title">Historique</div>
+    <div class="history-count" id="histCount">0 alertes envoyées</div>
+    <div class="history-list" id="histList">
+      <div class="history-empty">
+        <div class="history-empty-icon">📡</div>
+        Aucune alerte envoyée
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-title">⚙ Configuration Canal</div>
+    <div class="field-group">
+      <label class="field-label">Identifiant de canal ntfy.sh</label>
+      <input type="text" class="field-input" id="topicInput" placeholder="ambu-pager-001">
+      <div style="font-size:12px;color:var(--text-dim);margin-top:8px;line-height:1.6;">
+        Choisissez un identifiant <strong>unique et difficile à deviner</strong>.<br>
+        Partagez-le avec les agents équipés du pager.<br>
+        <span style="color:#f5c518;">⚠</span> Ne pas utiliser d'informations sensibles.
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeSettings()">Annuler</button>
+      <button class="btn btn-danger" onclick="saveSettings()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+/* ─── STATE ─── */
+let selectedType = '';
+let selectedGrade = '';
+let alertSentCount = 0;
+let topic = localStorage.getItem('pager_topic') || generateTopic();
+
+function generateTopic() {
+  const t = 'ambu-pager-' + Math.random().toString(36).slice(2, 8);
+  localStorage.setItem('pager_topic', t);
+  return t;
+}
+
+/* ─── INIT ─── */
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('headerTopic').textContent = 'canal: ' + topic;
+  updatePreview();
+  updateClock();
+  setInterval(updateClock, 30000);
+});
+
+function updateClock() {
+  const n = new Date();
+  const t = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('prevClock').textContent = t;
+  document.getElementById('prevSeg').textContent = '-- --   ' + t;
+}
+
+/* ─── TYPE / GRADE ─── */
+function selectType(el) {
+  document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  selectedType = el.dataset.type;
+  document.getElementById('incidentType').value = selectedType;
+  updatePreview();
+}
+
+function selectGrade(el) {
+  document.querySelectorAll('.grade-btn').forEach(b => b.className = 'grade-btn');
+  const g = el.dataset.grade;
+  el.className = 'grade-btn active-' + g.toLowerCase();
+  selectedGrade = g;
+  updatePreview();
+}
+
+/* ─── PREVIEW ─── */
+function updatePreview() {
+  const type = document.getElementById('incidentType').value.trim() || '—';
+  const grade = selectedGrade || '';
+  const ext = document.getElementById('extNumber').value.trim();
+  const free = document.getElementById('freeText').value.trim();
+
+  const resources = [];
+  if (document.getElementById('res-ambu').checked) resources.push('AMBULANCE');
+  if (document.getElementById('res-smur').checked) resources.push('SMUR');
+  if (document.getElementById('res-vsav').checked) resources.push('VSAV');
+  if (document.getElementById('res-heli').checked) resources.push('HELI');
+  if (document.getElementById('res-mug').checked)  resources.push('MUG');
+  if (document.getElementById('res-pom').checked)  resources.push('POMPIERS');
+
+  const line1 = (type + (grade ? ' ' + grade : '')).toUpperCase().slice(0, 28);
+
+  let line2Parts = [];
+  if (resources.length) line2Parts.push('demande ' + resources.join(' ET '));
+  if (ext) line2Parts.push('au ' + ext);
+  if (free) line2Parts.push(free);
+  const line2 = line2Parts.join(' ').toUpperCase().slice(0, 28) || '—';
+
+  document.getElementById('prevLine1').textContent = line1;
+  document.getElementById('prevLine2').textContent = line2;
+}
+
+/* ─── SEND ─── */
+async function sendAlert() {
+  const type  = document.getElementById('incidentType').value.trim();
+  const ext   = document.getElementById('extNumber').value.trim();
+  const free  = document.getElementById('freeText').value.trim();
+
+  if (!type) { showToast('Indiquez un type d\'incident', 'error'); return; }
+  if (!selectedGrade) { showToast('Sélectionnez un grade d\'urgence', 'error'); return; }
+
+  const resources = [];
+  if (document.getElementById('res-ambu').checked) resources.push('AMBULANCE');
+  if (document.getElementById('res-smur').checked) resources.push('SMUR');
+  if (document.getElementById('res-vsav').checked) resources.push('VSAV');
+  if (document.getElementById('res-heli').checked) resources.push('HELI');
+  if (document.getElementById('res-mug').checked)  resources.push('MUG');
+  if (document.getElementById('res-pom').checked)  resources.push('POMPIERS');
+
+  const line1 = (type + ' ' + selectedGrade).toUpperCase().slice(0, 32);
+
+  let line2Parts = [];
+  if (resources.length) line2Parts.push('demande ' + resources.join(' ET '));
+  if (ext) line2Parts.push('au ' + ext);
+  if (free) line2Parts.push(free);
+  const line2 = line2Parts.join(' ').toUpperCase().slice(0, 32) || 'ALERTE ' + selectedGrade;
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ ENVOI EN COURS...';
+
+  try {
+    const res = await fetch(`https://ntfy.sh/${topic}`, {
+      method: 'POST',
+      headers: {
+        'Title':    line1,
+        'Priority': selectedGrade === 'T1' || selectedGrade === 'SMUR' ? 'urgent' : 'default',
+        'Tags':     'rotating_light,ambulance',
+        'Content-Type': 'text/plain',
+      },
+      body: line2,
+    });
+
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+
+    // Animate button
+    btn.disabled = false;
+    btn.classList.add('sending');
+    btn.innerHTML = '<span class="send-icon">✅</span> PAGER DÉCLENCHÉ !';
+    setTimeout(() => {
+      btn.classList.remove('sending');
+      btn.innerHTML = '<span class="send-icon">🔔</span> DÉCLENCHER LE PAGER';
+    }, 2000);
+
+    alertSentCount++;
+    addToHistory(line1, line2);
+    showToast('Pager déclenché !', 'success');
+
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="send-icon">🔔</span> DÉCLENCHER LE PAGER';
+    showToast('Erreur réseau : ' + err.message, 'error');
+  }
+}
+
+/* ─── HISTORY ─── */
+function addToHistory(line1, line2) {
+  const list = document.getElementById('histList');
+
+  // Remove empty state
+  const empty = list.querySelector('.history-empty');
+  if (empty) empty.remove();
+
+  const now = new Date();
+  const timeStr = String(now.getHours()).padStart(2,'0') + ':' +
+                  String(now.getMinutes()).padStart(2,'0') + ':' +
+                  String(now.getSeconds()).padStart(2,'0');
+
+  const grade = selectedGrade;
+  const priority = (grade === 'T1' || grade === 'SMUR') ? 'high' : (grade === 'T2' ? 'medium' : 'low');
+
+  const item = document.createElement('div');
+  item.className = `alert-item priority-${priority}`;
+  item.innerHTML = `
+    <div class="alert-time">${timeStr}</div>
+    <div class="alert-title">${line1}</div>
+    <div class="alert-body">${line2}</div>
+  `;
+  list.insertBefore(item, list.firstChild);
+
+  document.getElementById('histCount').textContent = alertSentCount + ' alerte' + (alertSentCount > 1 ? 's' : '') + ' envoyée' + (alertSentCount > 1 ? 's' : '');
+}
+
+/* ─── SETTINGS ─── */
+function openSettings() {
+  document.getElementById('topicInput').value = topic;
+  document.getElementById('settingsModal').classList.add('show');
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('show');
+}
+
+function saveSettings() {
+  const val = document.getElementById('topicInput').value.trim();
+  if (!val) { showToast('Canal invalide', 'error'); return; }
+  topic = val;
+  localStorage.setItem('pager_topic', topic);
+  document.getElementById('headerTopic').textContent = 'canal: ' + topic;
+  closeSettings();
+  showToast('Canal mis à jour', 'success');
+}
+
+document.getElementById('settingsModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeSettings();
+});
+
+/* ─── TOAST ─── */
+let toastTimer;
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 2800);
+}
+</script>
+</body>
+</html>
