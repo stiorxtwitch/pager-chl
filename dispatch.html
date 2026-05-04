@@ -291,6 +291,7 @@
   <div class="header-sep"></div>
   <div class="header-topic" id="headerTopic">canal: —</div>
   <button class="btn btn-ghost btn-sm" onclick="openSettings()" style="margin-left:8px;">⚙ Canal</button>
+  <button class="btn btn-ghost btn-sm" onclick="launchPopup()" id="popupBtn" style="margin-left:6px;" title="Ouvrir le pager dans une fenêtre flottante indépendante">📟 Détacher</button>
 </header>
 
 <!-- MAIN LAYOUT -->
@@ -412,6 +413,26 @@
 <div id="toast"></div>
 
 <script>
+/* ─── POPUP ─── */
+let pagerPopup = null;
+
+function launchPopup() {
+  if (pagerPopup && !pagerPopup.closed) { pagerPopup.focus(); return; }
+  const sx = parseInt(localStorage.getItem('pager_popup_x'));
+  const sy = parseInt(localStorage.getItem('pager_popup_y'));
+  const x = isNaN(sx) ? (window.screen.availWidth - 360) : sx;
+  const y = isNaN(sy) ? 24 : sy;
+  pagerPopup = window.open(
+    'pager-popup.html', 'AmbuPager',
+    `width=340,height=218,left=${x},top=${y},toolbar=no,menubar=no,location=no,status=no,resizable=no,scrollbars=no`
+  );
+  const btn = document.getElementById('popupBtn');
+  btn.textContent = '📟 Pager ouvert ✓';
+  const iv = setInterval(() => {
+    if (!pagerPopup || pagerPopup.closed) { btn.textContent = '📟 Détacher'; clearInterval(iv); }
+  }, 1000);
+}
+
 /* ─── STATE ─── */
 let selectedType = '';
 let selectedGrade = '';
