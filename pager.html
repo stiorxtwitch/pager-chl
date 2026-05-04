@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAMU — Pager</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background: var(--bg); display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ── MAIN CONTENT ── */
+    .pager-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 32px 20px;
+      position: relative;
+    }
+
+    /* Big status display */
+    .status-display {
+      text-align: center;
+      max-width: 560px;
+      width: 100%;
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 20px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      margin-bottom: 40px;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #444;
+      transition: background 0.3s;
+    }
+
+    .status-dot.connected    { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .status-dot.disconnected { background: var(--red); }
+    .status-dot.connecting   { background: var(--yellow); animation: conn-pulse 1s ease-in-out infinite; }
+
+    .status-label {
+      color: var(--text-dim);
+      transition: color 0.3s;
+    }
+
+    .status-label.connected    { color: var(--green); }
+    .status-label.disconnected { color: var(--red); }
+    .status-label.connecting   { color: var(--yellow); }
+
+    /* Pager icon illustration */
+    .pager-illustration {
+      width: 160px;
+      height: 100px;
+      margin: 0 auto 40px;
+      position: relative;
+    }
+
+    .pager-illus-body {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(160deg, #2e2e2e, #1a1a1a);
+      border-radius: 16px;
+      border: 2px solid #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    }
+
+    .pager-illus-screen {
+      width: 80%;
+      height: 44%;
+      background: var(--lcd-bg-dark);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-lcd);
+      font-size: 9px;
+      color: var(--lcd-dim);
+      letter-spacing: 1px;
+      transition: background 0.3s, color 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pager-illus-screen.active {
+      background: var(--lcd-bg);
+      color: var(--lcd-text);
+      box-shadow: 0 0 12px rgba(74,124,78,0.4);
+      animation: lcd-flash 0.3s ease;
+    }
+
+    @keyframes lcd-flash {
+      0% { background: #8fff8f; }
+      100% { background: var(--lcd-bg); }
+    }
+
+    .pager-illus-screen::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 3px);
+      pointer-events: none;
+    }
+
+    .pager-illus-btns {
+      display: flex;
+      gap: 5px;
+    }
+
+    .illus-btn {
+      width: 22px;
+      height: 14px;
+      border-radius: 4px;
+    }
+
+    /* Wait state rings */
+    .standby-rings {
+      position: absolute;
+      inset: -30px;
+      pointer-events: none;
+    }
+
+    .standby-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(74,124,78,0.2);
+      animation: ring-expand 3s ease-out infinite;
+    }
+
+    .standby-ring:nth-child(1) { inset: 30%; animation-delay: 0s; }
+    .standby-ring:nth-child(2) { inset: 15%; animation-delay: 1s; }
+    .standby-ring:nth-child(3) { inset: 0%;  animation-delay: 2s; }
+
+    @keyframes ring-expand {
+      0%   { opacity: 0.5; transform: scale(0.8); }
+      100% { opacity: 0;   transform: scale(1.4); }
+    }
+
+    .standby-rings.alerting .standby-ring {
+      border-color: rgba(232,48,48,0.3);
+      animation-duration: 0.8s;
+    }
+
+    /* Main title */
+    .main-title {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 900;
+      letter-spacing: 4px;
+      color: var(--text-bright);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      line-height: 1;
+    }
+
+    .main-subtitle {
+      font-family: var(--font-lcd);
+      font-size: 13px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      margin-bottom: 40px;
+    }
+
+    /* Topic display */
+    .topic-display {
+      font-family: var(--font-lcd);
+      font-size: 12px;
+      color: var(--text-dim);
+      background: var(--surface2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .topic-val { color: var(--accent); }
+
+    /* Open pager button */
+    .open-pager-btn {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 14px 28px;
+      border-radius: 8px;
+      border: 1px solid var(--green);
+      background: rgba(45,181,81,0.1);
+      color: var(--green);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .open-pager-btn:hover {
+      background: rgba(45,181,81,0.2);
+      box-shadow: 0 0 20px rgba(45,181,81,0.2);
+    }
+
+    /* Divider */
+    .divider {
+      width: 100%;
+      max-width: 560px;
+      height: 1px;
+      background: var(--border);
+      margin: 40px 0;
+    }
+
+    /* Alert history */
+    .alert-section {
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .section-label {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .empty-history {
+      text-align: center;
+      color: var(--text-dim);
+      font-family: var(--font-lcd);
+      font-size: 12px;
+      padding: 20px 0;
+    }
+
+    /* Settings button in header */
+    .settings-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 6px 12px;
+      font-family: var(--font-display);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      transition: all 0.15s;
+    }
+
+    .settings-btn:hover { border-color: #3d4d6a; color: var(--text); }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="page-header">
+  <div class="header-logo">SAMU <span>·</span> Pager</div>
+  <div class="header-badge badge-pager">RÉCEPTION</div>
+  <div class="header-sep"></div>
+  <div class="header-conn">
+    <div class="conn-dot connecting" id="connDot"></div>
+    <span id="connLabel" style="color:var(--yellow)">Connexion...</span>
+  </div>
+  <button class="settings-btn" onclick="openSettings()" style="margin-left:12px;">⚙ Canal</button>
+  <a href="dispatch.html" class="btn btn-ghost btn-sm" style="margin-left:8px;text-decoration:none;">→ Dispatch</a>
+</header>
+
+<!-- MAIN -->
+<main class="pager-main">
+  <div class="status-display">
+
+    <!-- Status pill -->
+    <div class="status-indicator">
+      <div class="status-dot connecting" id="statusDot"></div>
+      <div class="status-label connecting" id="statusLabel">Connexion en cours...</div>
+    </div>
+
+    <!-- Pager Illustration -->
+    <div class="pager-illustration">
+      <div class="standby-rings" id="standbyRings">
+        <div class="standby-ring"></div>
+        <div class="standby-ring"></div>
+        <div class="standby-ring"></div>
+      </div>
+      <div class="pager-illus-body">
+        <div class="pager-illus-screen" id="illusScreen">EN ATTENTE</div>
+        <div class="pager-illus-btns">
+          <div class="illus-btn" style="background:linear-gradient(180deg,#ffd700,#cc8800)"></div>
+          <div class="illus-btn" style="background:linear-gradient(180deg,#ffd700,#cc8800)"></div>
+          <div class="illus-btn" style="background:linear-gradient(180deg,#ff4444,#cc0000)"></div>
+          <div class="illus-btn" style="background:linear-gradient(180deg,#44cc44,#009900)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <div class="main-title">En attente</div>
+    <div class="main-subtitle" id="waitSubtitle">Surveillance du canal pager...</div>
+
+    <!-- Topic -->
+    <div class="topic-display">
+      Canal : <span class="topic-val" id="topicDisplay">—</span>
+    </div>
+
+    <br><br>
+
+    <!-- Open Pager Button -->
+    <button class="open-pager-btn" onclick="openPagerWidget()">
+      📟 Ouvrir le Pager
+    </button>
+
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Alert history -->
+  <div class="alert-section">
+    <div class="section-label">Alertes reçues</div>
+    <div id="alertHistory">
+      <div class="empty-history">Aucune alerte reçue sur ce canal</div>
+    </div>
+  </div>
+</main>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-title">⚙ Configuration Canal</div>
+    <div class="field-group">
+      <label class="field-label">Identifiant de canal ntfy.sh</label>
+      <input type="text" class="field-input" id="topicInput" placeholder="ambu-pager-001">
+      <div style="font-size:12px;color:var(--text-dim);margin-top:8px;line-height:1.6;">
+        Entrez le même canal que la page Dispatch.<br>
+        <span style="color:#f5c518;">⚠</span> Les alertes ne seront reçues que si les deux pages partagent le même canal.
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeSettings()">Annuler</button>
+      <button class="btn btn-danger" onclick="saveSettings()">Reconnexion</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- PAGER WIDGET -->
+<script src="pager-widget.js"></script>
+
+<script>
+/* ─── INIT ─── */
+let alertCount = 0;
+let topic = localStorage.getItem('pager_topic') || 'ambu-pager-demo';
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('topicDisplay').textContent = topic;
+});
+
+/* ─── CONNECTION STATUS ─── */
+window.addEventListener('pager-conn', (e) => {
+  const state = e.detail;
+  const dot = document.getElementById('connDot');
+  const label = document.getElementById('connLabel');
+  const sdot = document.getElementById('statusDot');
+  const slabel = document.getElementById('statusLabel');
+  const sub = document.getElementById('waitSubtitle');
+
+  dot.className = 'conn-dot ' + state;
+  label.className = state;
+  sdot.className = 'status-dot ' + state;
+  slabel.className = 'status-label ' + state;
+
+  const labels = {
+    connected:    'Connecté — En écoute',
+    disconnected: 'Déconnecté — Tentative...',
+    connecting:   'Connexion en cours...',
+  };
+  label.textContent = labels[state] || state;
+  slabel.textContent = labels[state] || state;
+  sub.textContent = state === 'connected'
+    ? 'Surveillance du canal active — Les alertes s\'afficheront ici'
+    : 'Reconnexion automatique...';
+});
+
+/* ─── RECEIVE ALERTS ─── */
+window.addEventListener('pager-alert', (e) => {
+  const { line1, line2, time } = e.detail;
+  alertCount++;
+
+  // Update illustration
+  const screen = document.getElementById('illusScreen');
+  screen.textContent = line1.slice(0, 12);
+  screen.classList.add('active');
+  setTimeout(() => screen.classList.remove('active'), 3000);
+
+  // Update standby rings to alert mode
+  const rings = document.getElementById('standbyRings');
+  rings.classList.add('alerting');
+  setTimeout(() => rings.classList.remove('alerting'), 6000);
+
+  // Update title
+  document.querySelector('.main-title').textContent = 'ALERTE !';
+  document.querySelector('.main-title').style.color = 'var(--red)';
+  setTimeout(() => {
+    document.querySelector('.main-title').textContent = 'En attente';
+    document.querySelector('.main-title').style.color = '';
+  }, 8000);
+
+  // Add to history
+  addToHistory(line1, line2, time);
+  openPagerWidget();
+});
+
+function addToHistory(line1, line2, time) {
+  const hist = document.getElementById('alertHistory');
+
+  // Remove empty state
+  const empty = hist.querySelector('.empty-history');
+  if (empty) empty.remove();
+
+  const h = String(time.getHours()).padStart(2,'0');
+  const m = String(time.getMinutes()).padStart(2,'0');
+  const s = String(time.getSeconds()).padStart(2,'0');
+
+  const item = document.createElement('div');
+  item.className = 'alert-item priority-high';
+  item.innerHTML = `
+    <div class="alert-time">${h}:${m}:${s}</div>
+    <div class="alert-title">${line1}</div>
+    <div class="alert-body">${line2}</div>
+  `;
+  hist.insertBefore(item, hist.firstChild);
+}
+
+/* ─── PAGER WIDGET CONTROLS ─── */
+function openPagerWidget() {
+  if (window.__pager) window.__pager.show();
+}
+
+/* ─── SETTINGS ─── */
+function openSettings() {
+  document.getElementById('topicInput').value = topic;
+  document.getElementById('settingsModal').classList.add('show');
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('show');
+}
+
+function saveSettings() {
+  const val = document.getElementById('topicInput').value.trim();
+  if (!val) return;
+  topic = val;
+  if (window.__pager) {
+    topic = window.__pager.setTopic(val);
+  } else {
+    localStorage.setItem('pager_topic', val);
+  }
+  document.getElementById('topicDisplay').textContent = topic;
+  closeSettings();
+  showToast('Canal mis à jour, reconnexion...', 'info');
+}
+
+document.getElementById('settingsModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeSettings();
+});
+
+/* ─── TOAST ─── */
+let toastTimer;
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 2800);
+}
+</script>
+</body>
+</html>
