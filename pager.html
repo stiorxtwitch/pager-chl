@@ -291,6 +291,7 @@
     <span id="connLabel" style="color:var(--yellow)">Connexion...</span>
   </div>
   <button class="settings-btn" onclick="openSettings()" style="margin-left:12px;">⚙ Canal</button>
+  <button class="settings-btn" onclick="launchPopup()" id="popupBtn" style="margin-left:6px;border-color:#2db551;color:#2db551;" title="Ouvrir le pager flottant indépendant">📟 Détacher</button>
   <a href="dispatch.html" class="btn btn-ghost btn-sm" style="margin-left:8px;text-decoration:none;">→ Dispatch</a>
 </header>
 
@@ -333,10 +334,13 @@
 
     <br><br>
 
-    <!-- Open Pager Button -->
-    <button class="open-pager-btn" onclick="openPagerWidget()">
-      📟 Ouvrir le Pager
+    <!-- Open Pager Button (popup) -->
+    <button class="open-pager-btn" onclick="launchPopup()">
+      📟 Détacher le Pager
     </button>
+    <div style="font-size:11px;color:var(--text-dim);margin-top:12px;font-family:var(--font-lcd);letter-spacing:1px;">
+      S'ouvre dans une fenêtre indépendante · reste ouvert si cet onglet est fermé
+    </div>
 
   </div>
 
@@ -372,10 +376,33 @@
 
 <div id="toast"></div>
 
-<!-- PAGER WIDGET -->
-<script src="pager-widget.js"></script>
-
+<!-- No inline widget — pager runs as independent popup -->
 <script>
+/* ─── POPUP ─── */
+let pagerPopup = null;
+
+function launchPopup() {
+  if (pagerPopup && !pagerPopup.closed) { pagerPopup.focus(); return; }
+  const sx = parseInt(localStorage.getItem('pager_popup_x'));
+  const sy = parseInt(localStorage.getItem('pager_popup_y'));
+  const x = isNaN(sx) ? (window.screen.availWidth - 360) : sx;
+  const y = isNaN(sy) ? 24 : sy;
+  pagerPopup = window.open(
+    'pager-popup.html', 'AmbuPager',
+    `width=340,height=218,left=${x},top=${y},toolbar=no,menubar=no,location=no,status=no,resizable=no,scrollbars=no`
+  );
+  const btn = document.getElementById('popupBtn');
+  if (btn) btn.textContent = '📟 Pager ouvert ✓';
+  document.querySelector('.open-pager-btn').textContent = '📟 Pager ouvert ✓';
+  const iv = setInterval(() => {
+    if (!pagerPopup || pagerPopup.closed) {
+      if (btn) btn.textContent = '📟 Détacher';
+      document.querySelector('.open-pager-btn').innerHTML = '📟 Détacher le Pager';
+      clearInterval(iv);
+    }
+  }, 1000);
+}
+
 /* ─── INIT ─── */
 let alertCount = 0;
 let topic = localStorage.getItem('pager_topic') || 'ambu-pager-demo';
@@ -384,60 +411,40 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('topicDisplay').textContent = topic;
 });
 
-/* ─── CONNECTION STATUS ─── */
-window.addEventListener('pager-conn', (e) => {
-  const state = e.detail;
-  const dot = document.getElementById('connDot');
-  const label = document.getElementById('connLabel');
-  const sdot = document.getElementById('statusDot');
-  const slabel = document.getElementById('statusLabel');
-  const sub = document.getElementById('waitSubtitle');
-
-  dot.className = 'conn-dot ' + state;
-  label.className = state;
-  sdot.className = 'status-dot ' + state;
-  slabel.className = 'status-label ' + state;
-
-  const labels = {
-    connected:    'Connecté — En écoute',
-    disconnected: 'Déconnecté — Tentative...',
-    connecting:   'Connexion en cours...',
-  };
-  label.textContent = labels[state] || state;
-  slabel.textContent = labels[state] || state;
-  sub.textContent = state === 'connected'
-    ? 'Surveillance du canal active — Les alertes s\'afficheront ici'
-    : 'Reconnexion automatique...';
+/* ─── CONNECTION STATUS (from popup via storage event) ── */
+window.addEventListener('storage', (e) => {
+  // Update status display if popup changes connection state
+  if (e.key === 'pager_topic') {
+    topic = e.newValue;
+    document.getElementById('topicDisplay').textContent = topic;
+  }
 });
 
-/* ─── RECEIVE ALERTS ─── */
-window.addEventListener('pager-alert', (e) => {
-  const { line1, line2, time } = e.detail;
-  alertCount++;
+/* ─── RECEIVE ALERTS (via storage, for history display) ─── */
+window.addEventListener('storage', (e) => {
+  if (e.key === 'pager_last_alert' && e.newValue) {
+    try {
+      const d = JSON.parse(e.newValue);
+      addToHistory(d.line1, d.line2, new Date(d.ts));
+      updateMainDisplay(d.line1);
+    } catch(_) {}
+  }
+});
 
-  // Update illustration
+function updateMainDisplay(line1) {
+  document.querySelector('.main-title').textContent = 'ALERTE !';
+  document.querySelector('.main-title').style.color = 'var(--red)';
   const screen = document.getElementById('illusScreen');
   screen.textContent = line1.slice(0, 12);
   screen.classList.add('active');
-  setTimeout(() => screen.classList.remove('active'), 3000);
-
-  // Update standby rings to alert mode
-  const rings = document.getElementById('standbyRings');
-  rings.classList.add('alerting');
-  setTimeout(() => rings.classList.remove('alerting'), 6000);
-
-  // Update title
-  document.querySelector('.main-title').textContent = 'ALERTE !';
-  document.querySelector('.main-title').style.color = 'var(--red)';
+  document.getElementById('standbyRings').classList.add('alerting');
   setTimeout(() => {
     document.querySelector('.main-title').textContent = 'En attente';
     document.querySelector('.main-title').style.color = '';
+    screen.classList.remove('active');
+    document.getElementById('standbyRings').classList.remove('alerting');
   }, 8000);
-
-  // Add to history
-  addToHistory(line1, line2, time);
-  openPagerWidget();
-});
+}
 
 function addToHistory(line1, line2, time) {
   const hist = document.getElementById('alertHistory');
@@ -458,11 +465,6 @@ function addToHistory(line1, line2, time) {
     <div class="alert-body">${line2}</div>
   `;
   hist.insertBefore(item, hist.firstChild);
-}
-
-/* ─── PAGER WIDGET CONTROLS ─── */
-function openPagerWidget() {
-  if (window.__pager) window.__pager.show();
 }
 
 /* ─── SETTINGS ─── */
