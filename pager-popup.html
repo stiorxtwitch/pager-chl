@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=340">
+  <title>📟 Pager SAMU</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📟</text></svg>">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 340px;
+      height: 218px;
+      overflow: hidden;
+      background: #111;
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+    }
+
+    /* ── MAIN PAGER BODY ── */
+    .pager {
+      width: 340px;
+      height: 218px;
+      background: linear-gradient(158deg, #303030 0%, #1c1c1c 45%, #252525 100%);
+      display: flex;
+      flex-direction: column;
+      padding: 0 14px 12px;
+      position: relative;
+    }
+
+    /* Subtle edge highlight */
+    .pager::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 0;
+      box-shadow: inset 0 2px 3px rgba(255,255,255,0.06), inset 0 -2px 3px rgba(0,0,0,0.4);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ── TOP CLIP / NOTCH ── */
+    .clip {
+      height: 20px;
+      background: linear-gradient(180deg, #3a3a3a 0%, #262626 100%);
+      margin: 0 -14px;
+      border-bottom: 2px solid #0e0e0e;
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      margin-bottom: 9px;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    /* Center ridge on clip */
+    .clip::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 42px;
+      height: 6px;
+      background: #181818;
+      border-radius: 3px;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.8);
+    }
+
+    .clip-label {
+      font-size: 8px;
+      color: #4a4a4a;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      z-index: 1;
+    }
+
+    .clip-controls {
+      display: flex;
+      gap: 5px;
+      z-index: 1;
+    }
+
+    .clip-btn {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      font-size: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.75;
+      transition: opacity 0.15s, transform 0.1s;
+      line-height: 1;
+    }
+
+    .clip-btn:hover { opacity: 1; transform: scale(1.15); }
+    .clip-btn:active { transform: scale(0.9); }
+
+    .btn-lock   { background: linear-gradient(180deg, #ffd700, #cc9900); color: #3a2800; }
+    .btn-lock.locked { background: linear-gradient(180deg, #ff9500, #cc6000); }
+    .btn-close  { background: linear-gradient(180deg, #ff5555, #cc2222); color: white; }
+    .btn-config { background: linear-gradient(180deg, #5588ff, #2255cc); color: white; }
+
+    /* ── LCD SCREEN ── */
+    .screen {
+      background: #2c5030;
+      border-radius: 7px;
+      padding: 6px 10px 7px;
+      margin-bottom: 8px;
+      flex-shrink: 0;
+      height: 82px;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.25s, box-shadow 0.25s;
+      box-shadow: inset 0 3px 9px rgba(0,0,0,0.65);
+    }
+
+    .screen.active {
+      background: #4a7c4e;
+      box-shadow: inset 0 3px 9px rgba(0,0,0,0.3), 0 0 16px rgba(74,124,78,0.3);
+    }
+
+    /* Scanlines */
+    .screen::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Top glare */
+    .screen::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 28%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.07), transparent);
+      pointer-events: none;
+      z-index: 2;
+      border-radius: 7px 7px 0 0;
+    }
+
+    .screen-inner {
+      position: relative;
+      z-index: 3;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Status row */
+    .s-status {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 9px;
+      color: #2a4e2e;
+      margin-bottom: 3px;
+      flex-shrink: 0;
+      transition: color 0.25s;
+    }
+
+    .screen.active .s-status { color: #0d200d; }
+    .s-sep { flex: 1; }
+
+    /* Segment display row */
+    .s-seg {
+      font-size: 9px;
+      color: #2a4e2e;
+      letter-spacing: 1.5px;
+      margin-bottom: 5px;
+      flex-shrink: 0;
+      transition: color 0.25s;
+    }
+
+    .screen.active .s-seg { color: #1d3c1e; }
+
+    /* Message lines */
+    .s-msg { flex: 1; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
+
+    .s-line {
+      font-size: 12px;
+      font-weight: 700;
+      color: #2a4e2e;
+      line-height: 1.35;
+      word-break: break-word;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      transition: color 0.25s;
+    }
+
+    .screen.active .s-line { color: #0a1a0a; }
+
+    @keyframes lcd-blink {
+      0%, 48% { opacity: 1; }
+      50%, 98% { opacity: 0.1; }
+      100%     { opacity: 1; }
+    }
+
+    .s-line.blink { animation: lcd-blink 0.55s step-end infinite; }
+
+    /* ── CONNECTION STATUS BAR ── */
+    .stat-bar {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 7px;
+      flex-shrink: 0;
+      height: 14px;
+    }
+
+    .c-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: background 0.3s, box-shadow 0.3s;
+      background: #333;
+    }
+
+    .c-dot.connected    { background: #2db551; box-shadow: 0 0 6px #2db551; }
+    .c-dot.connecting   { background: #f5c518; animation: blink-c 0.9s ease-in-out infinite; }
+    .c-dot.disconnected { background: #e83030; }
+
+    @keyframes blink-c { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    .c-label {
+      font-size: 9px;
+      color: #444;
+      flex: 1;
+      transition: color 0.3s;
+      letter-spacing: 0.3px;
+    }
+
+    .c-label.connected    { color: #2db551; }
+    .c-label.connecting   { color: #f5c518; }
+    .c-label.disconnected { color: #e83030; }
+
+    .c-topic {
+      font-size: 8px;
+      color: #2d2d2d;
+      letter-spacing: 0.3px;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── PHYSICAL BUTTONS ── */
+    .btns {
+      display: flex;
+      gap: 7px;
+      flex-shrink: 0;
+    }
+
+    .pb {
+      flex: 1;
+      height: 28px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: transform 0.08s;
+      outline: none;
+    }
+
+    /* Top highlight */
+    .pb::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, transparent 55%);
+      pointer-events: none;
+    }
+
+    .pb:active { transform: translateY(2px); }
+    .pb:active { box-shadow: none !important; }
+
+    .pb-y { background: linear-gradient(180deg, #ffd700, #cc8800); box-shadow: 0 3px 0 #7a5800, 0 4px 6px rgba(0,0,0,0.4); color: #3a2000; }
+    .pb-r { background: linear-gradient(180deg, #ff4444, #cc0000); box-shadow: 0 3px 0 #880000, 0 4px 6px rgba(0,0,0,0.4); color: white; }
+    .pb-g { background: linear-gradient(180deg, #44cc44, #009900); box-shadow: 0 3px 0 #006600, 0 4px 6px rgba(0,0,0,0.4); color: white; }
+
+    /* ── ALERT FLASH OVERLAY ── */
+    .flash-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 40, 40, 0.25);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 100;
+      transition: opacity 0.1s;
+    }
+
+    .flash-overlay.show { opacity: 1; }
+
+    /* ── CONFIG MODAL (inline) ── */
+    .config-panel {
+      position: fixed;
+      inset: 0;
+      background: #131720;
+      z-index: 50;
+      display: none;
+      flex-direction: column;
+      padding: 14px;
+      gap: 10px;
+    }
+
+    .config-panel.show { display: flex; }
+
+    .cfg-title {
+      font-size: 10px;
+      color: #6b7490;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .cfg-input {
+      background: #0b0d11;
+      border: 1px solid #252d3e;
+      border-radius: 5px;
+      color: #d8dce8;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 12px;
+      padding: 8px 10px;
+      outline: none;
+      width: 100%;
+    }
+
+    .cfg-input:focus { border-color: #4d7eff; }
+
+    .cfg-note {
+      font-size: 9px;
+      color: #444;
+      line-height: 1.6;
+    }
+
+    .cfg-btns { display: flex; gap: 8px; margin-top: auto; }
+
+    .cfg-btn {
+      flex: 1;
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+
+    .cfg-cancel { background: #1c2130; color: #6b7490; border: 1px solid #252d3e; }
+    .cfg-save   { background: #e83030; color: white; }
+  </style>
+</head>
+<body>
+
+<!-- FLASH OVERLAY (on alert) -->
+<div class="flash-overlay" id="flashOverlay"></div>
+
+<!-- CONFIG PANEL -->
+<div class="config-panel" id="configPanel">
+  <div class="cfg-title">⚙ Canal ntfy.sh</div>
+  <input class="cfg-input" type="text" id="cfgInput" placeholder="ambu-pager-001" spellcheck="false">
+  <div class="cfg-note">
+    Même canal que la page Dispatch.<br>
+    Ex: ambu-samu-nancy-x7k2
+  </div>
+  <div class="cfg-btns">
+    <button class="cfg-btn cfg-cancel" onclick="closeConfig()">Annuler</button>
+    <button class="cfg-btn cfg-save" onclick="saveConfig()">Enregistrer</button>
+  </div>
+</div>
+
+<!-- PAGER DEVICE -->
+<div class="pager">
+
+  <!-- Top clip -->
+  <div class="clip">
+    <span class="clip-label">SAMU · PAGER</span>
+    <div class="clip-controls">
+      <button class="clip-btn btn-config" id="cfgBtn" onclick="openConfig()" title="Configurer le canal">⚙</button>
+      <button class="clip-btn btn-lock"   id="lockBtn" onclick="toggleLock()" title="Verrouiller la position">🔓</button>
+      <button class="clip-btn btn-close"  onclick="window.close()" title="Fermer le pager">✕</button>
+    </div>
+  </div>
+
+  <!-- LCD Screen -->
+  <div class="screen" id="screen">
+    <div class="screen-inner">
+      <div class="s-status" id="sStatus">
+        <span>☀</span>
+        <span>▴</span>
+        <span>◄)</span>
+        <span class="s-sep"></span>
+        <span id="sClock">--:--</span>
+        <span>▶</span>
+      </div>
+      <div class="s-seg" id="sSeg">-- -- &nbsp;&nbsp; --:--</div>
+      <div class="s-msg">
+        <div class="s-line" id="sLine1">EN ATTENTE...</div>
+        <div class="s-line" id="sLine2" style="opacity:0.6"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connection bar -->
+  <div class="stat-bar">
+    <div class="c-dot connecting" id="cDot"></div>
+    <div class="c-label connecting" id="cLabel">Connexion...</div>
+    <div class="c-topic" id="cTopic"></div>
+  </div>
+
+  <!-- Physical buttons -->
+  <div class="btns">
+    <button class="pb pb-y" title="Précédent" onclick="prevMsg()">◀</button>
+    <button class="pb pb-y" title="Suivant"   onclick="nextMsg()">▶</button>
+    <button class="pb pb-r" title="Acquitter l'alerte" onclick="acknowledge()">▲</button>
+    <button class="pb pb-g" title="Tester le son"      onclick="playSound()">♪</button>
+  </div>
+
+</div>
+
+<script>
+/* ════════════════════════════════════════
+   PAGER POPUP — Système Pager SAMU
+   Connexion ntfy.sh indépendante,
+   persiste même si la page principale
+   est fermée.
+════════════════════════════════════════ */
+
+// ── STATE ──
+let topic    = localStorage.getItem('pager_topic') || 'ambu-pager-demo';
+let es       = null;
+let audioCtx = null;
+let blinkTimer   = null;
+let flashTimer   = null;
+let lockInterval = null;
+let locked   = localStorage.getItem('pager_locked') === '1';
+let msgQueue = []; // history of received messages
+let msgIdx   = -1;
+
+// ── BOOT ──
+window.addEventListener('DOMContentLoaded', () => {
+  applyTopic(topic);
+  updateClock();
+  setInterval(updateClock, 10000);
+  restorePosition();
+  startPositionTracking();
+  connect();
+  if (locked) applyLock(true, false); // restore lock state without setting interval again yet
+});
+
+window.addEventListener('beforeunload', savePosition);
+
+// ── CLOCK ──
+function updateClock() {
+  const n = new Date();
+  const t = pad(n.getHours()) + ':' + pad(n.getMinutes());
+  document.getElementById('sClock').textContent = t;
+  refreshSeg(t);
+}
+
+function refreshSeg(t) {
+  const now = t || (pad(new Date().getHours()) + ':' + pad(new Date().getMinutes()));
+  document.getElementById('sSeg').innerHTML = '-- -- &nbsp;&nbsp; ' + now;
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+// ── POSITION LOCK ──
+function restorePosition() {
+  const x = parseInt(localStorage.getItem('pager_popup_x'));
+  const y = parseInt(localStorage.getItem('pager_popup_y'));
+  if (!isNaN(x) && !isNaN(y)) {
+    window.moveTo(x, y);
+  } else {
+    // Default: top-right corner
+    window.moveTo(window.screen.availWidth - 360, 24);
+  }
+}
+
+function savePosition() {
+  localStorage.setItem('pager_popup_x', window.screenX);
+  localStorage.setItem('pager_popup_y', window.screenY);
+}
+
+function startPositionTracking() {
+  // Track position every 1s to persist across reloads
+  setInterval(() => {
+    if (!locked) {
+      localStorage.setItem('pager_popup_x', window.screenX);
+      localStorage.setItem('pager_popup_y', window.screenY);
+    }
+  }, 1000);
+}
+
+function toggleLock() {
+  locked = !locked;
+  applyLock(locked, true);
+}
+
+function applyLock(state, save) {
+  locked = state;
+  const btn = document.getElementById('lockBtn');
+
+  if (locked) {
+    const lx = window.screenX;
+    const ly = window.screenY;
+    localStorage.setItem('pager_popup_x', lx);
+    localStorage.setItem('pager_popup_y', ly);
+    localStorage.setItem('pager_locked', '1');
+
+    btn.textContent = '🔒';
+    btn.title = 'Position verrouillée — cliquez pour déverrouiller';
+    btn.classList.add('locked');
+
+    // Snap back to locked position every 300ms
+    clearInterval(lockInterval);
+    lockInterval = setInterval(() => {
+      window.moveTo(
+        parseInt(localStorage.getItem('pager_popup_x')),
+        parseInt(localStorage.getItem('pager_popup_y'))
+      );
+    }, 300);
+
+  } else {
+    clearInterval(lockInterval);
+    localStorage.setItem('pager_locked', '0');
+    btn.textContent = '🔓';
+    btn.title = 'Verrouiller la position';
+    btn.classList.remove('locked');
+  }
+}
+
+// ── NTFY.SH ──
+function connect() {
+  setConn('connecting');
+  es = new EventSource('https://ntfy.sh/' + topic + '/sse');
+
+  es.addEventListener('open', () => setConn('connected'));
+
+  es.addEventListener('message', (e) => {
+    try {
+      const d = JSON.parse(e.data);
+      if (d.event === 'message') {
+        receiveAlert(d.title || '', d.message || '');
+      }
+    } catch(_) {}
+  });
+
+  es.addEventListener('error', () => {
+    setConn('disconnected');
+    es.close();
+    es = null;
+    setTimeout(connect, 5000);
+  });
+}
+
+function disconnect() {
+  if (es) { es.close(); es = null; }
+  setConn('disconnected');
+}
+
+function setConn(state) {
+  const dot   = document.getElementById('cDot');
+  const label = document.getElementById('cLabel');
+  dot.className = 'c-dot ' + state;
+  label.className = 'c-label ' + state;
+  const map = { connected:'Connecté ✓', disconnected:'Hors ligne...', connecting:'Connexion...' };
+  label.textContent = map[state] || state;
+}
+
+function applyTopic(t) {
+  topic = t;
+  document.getElementById('cTopic').textContent = t.length > 18 ? t.slice(0, 17) + '…' : t;
+}
+
+// ── ALERT RECEPTION ──
+function receiveAlert(line1, line2) {
+  // Push to queue
+  const item = { line1, line2, time: new Date() };
+  msgQueue.unshift(item);
+  msgIdx = 0;
+  if (msgQueue.length > 20) msgQueue.pop();
+
+  // Activate screen
+  showMsg(line1, line2, true);
+
+  // Flash overlay
+  flashAlert();
+
+  // Blink
+  clearTimeout(blinkTimer);
+  document.getElementById('sLine1').classList.add('blink');
+  document.getElementById('sLine2').classList.add('blink');
+  blinkTimer = setTimeout(stopBlink, 9000);
+
+  // Flash title
+  flashTitle();
+
+  // Bring window to front
+  window.focus();
+
+  // Sound + vibration
+  playSound();
+  if (navigator.vibrate) navigator.vibrate([200,80,200,80,300,200,200,80,200]);
+}
+
+function showMsg(line1, line2, active) {
+  const screen = document.getElementById('screen');
+  document.getElementById('sLine1').textContent = line1 || 'EN ATTENTE...';
+  document.getElementById('sLine2').textContent = line2 || '';
+  document.getElementById('sLine2').style.opacity = line2 ? '1' : '0.4';
+  if (active) {
+    screen.classList.add('active');
+    document.getElementById('sStatus').style.color = '';
+  }
+  refreshSeg();
+}
+
+function stopBlink() {
+  document.getElementById('sLine1').classList.remove('blink');
+  document.getElementById('sLine2').classList.remove('blink');
+}
+
+function flashAlert() {
+  const ov = document.getElementById('flashOverlay');
+  let count = 0;
+  const run = () => {
+    ov.classList.add('show');
+    setTimeout(() => ov.classList.remove('show'), 120);
+    count++;
+    if (count < 5) setTimeout(run, 350);
+  };
+  run();
+}
+
+function flashTitle() {
+  let n = 0;
+  const iv = setInterval(() => {
+    document.title = n % 2 === 0 ? '🚨 ALERTE PAGER !' : '📟 Pager SAMU';
+    n++;
+    if (n > 12) { clearInterval(iv); document.title = '📟 Pager SAMU'; }
+  }, 500);
+}
+
+// ── BUTTONS ──
+function acknowledge() {
+  stopBlink();
+  document.getElementById('screen').classList.remove('active');
+  document.getElementById('sLine1').textContent = 'ACQUITTÉ';
+  document.getElementById('sLine2').textContent = '';
+  document.title = '📟 Pager SAMU';
+  setTimeout(() => {
+    if (msgQueue[0]) {
+      document.getElementById('sLine1').textContent = msgQueue[0].line1;
+      document.getElementById('sLine2').textContent = msgQueue[0].line2 || '';
+    } else {
+      document.getElementById('sLine1').textContent = 'EN ATTENTE...';
+    }
+  }, 2000);
+}
+
+function prevMsg() {
+  if (msgIdx < msgQueue.length - 1) {
+    msgIdx++;
+    const m = msgQueue[msgIdx];
+    showMsg(m.line1, m.line2, false);
+  }
+}
+
+function nextMsg() {
+  if (msgIdx > 0) {
+    msgIdx--;
+    const m = msgQueue[msgIdx];
+    showMsg(m.line1, m.line2, false);
+  } else if (msgIdx === 0) {
+    showMsg(msgQueue[0]?.line1 || 'EN ATTENTE...', msgQueue[0]?.line2 || '', !!msgQueue[0]);
+  }
+}
+
+// ── SOUND ──
+function playSound() {
+  // Try page.mp3 first
+  const audio = new Audio('page.mp3');
+  audio.play().catch(() => playSynth());
+}
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playSynth() {
+  const ctx = getAudioCtx();
+  const pattern = [
+    {f:1400,d:.10},{f:900,d:.10},{f:1400,d:.10},{f:900,d:.10},{f:1400,d:.14},
+    {f:0,d:.14},
+    {f:1400,d:.10},{f:900,d:.10},{f:1400,d:.10},{f:900,d:.10},{f:1400,d:.18},
+  ];
+  let t = ctx.currentTime + 0.04;
+  pattern.forEach(({f,d}) => {
+    if (f > 0) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = f;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
+      gain.gain.setValueAtTime(0.4, t + d - 0.01);
+      gain.gain.linearRampToValueAtTime(0, t + d);
+      osc.start(t); osc.stop(t + d);
+    }
+    t += d;
+  });
+}
+
+// ── CONFIG ──
+function openConfig() {
+  document.getElementById('cfgInput').value = topic;
+  document.getElementById('configPanel').classList.add('show');
+}
+
+function closeConfig() {
+  document.getElementById('configPanel').classList.remove('show');
+}
+
+function saveConfig() {
+  const val = document.getElementById('cfgInput').value.trim();
+  if (!val) return;
+  disconnect();
+  localStorage.setItem('pager_topic', val);
+  applyTopic(val);
+  closeConfig();
+  connect();
+}
+</script>
+</body>
+</html>
